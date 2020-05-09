@@ -22,7 +22,6 @@ app.use(bodyParser.json({limit: '50mb'}));
 app.use(bodyParser.urlencoded({limit: '50mb', extended: true}));
 app.use(cookieParser());
 // app.use(multer());
-const formFormat = multer({dest: './uploads'}); //表单数据处理
 app.use(express.static(path.join(__dirname, '../public')));
 
 //解决请求跨域

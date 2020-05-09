@@ -6,7 +6,7 @@ const mysql_config = { // mysql采用pool连接池基础配置 （采用pool连�
     port : 3306,  //连接数据库的端口号
     user : 'root', // mysql 账户
     password : 'gaohui1995', // mysql 密码
-    database : 'shopManage', // 要操作的数据库
+    database : 'clothShop', // 要操作的数据库
     supportBigNumbers: true, //数据库支持bigint或decimal类型列时，需要设此option为true （默认：false）
     connectTimeOut: 5000,   //连接超时
 }

@@ -20,7 +20,7 @@ router.post(`/addProduct`, jsonParser, async (req,res,next) => {
         productName: req.body.productName,
         productImg: req.body.productImg,
         productDescript: req.body.productDescript,
-        productDesList: req.body.productDesList.join("&&"),
+        productDesList: req.body.productDesList.join(" && "),
         classifyId: req.body.classifyId,
         defaultCategoryId: req.body.defaultCategoryId,
         status: req.body.status,
@@ -91,11 +91,11 @@ router.get(`/productInfo`, jsonParser, async (req,res,next) => {
     const productId = req.query.productId;
     mysql.getObj(`select * from shops,products,category where shops.shopId=products.shopId and products.productId="${productId}" and products.isDelete=0 and products.defaultCategoryId=category.categoryId`).then(productData => {
         let resData = JSON.parse(JSON.stringify(productData));
-        resData.productDesList = resData.productDesList.split("&&");
         mysql.getObjList(`select * from category where productId="${productId}"`).then(cateData => {
             const data = JSON.parse(JSON.stringify(cateData));
             resData.categoryList=[];
             resData.categoryList.push(...data);
+            resData.productDesList = resData.productDesList.split("&&");
             res.json({code: 0, msg: "获取成功", data: resData});
         }).catch(error => {
             res.json({code: -1, msg: "获取失败", data: error});
@@ -153,7 +153,8 @@ router.post(`/addShopingCart`, jsonParser, async (req, res, next) => {
             //将规格的id存入购物车中
             resData.push(productData);
             const resStr = JSON.stringify(resData);
-            mysql.execute(`update users set shoppingCart='${resStr}' where userId=${userId}`).then(reData => {
+            let sqlStr = `update users set shoppingCart='${resStr}' where userId=${userId}`;
+            mysql.execute(sqlStr).then(reData => {
                 res.json({code: 0, msg: "添加购物车成功", data: reData});
                 return;
             }).catch(error => {
@@ -162,26 +163,29 @@ router.post(`/addShopingCart`, jsonParser, async (req, res, next) => {
             })
         } else {
             const shoppingCartData = JSON.parse(cartData);
-            //对比已有数据，有则添加，没有则加入
+            //对比已有数据，有则不添加，没有则加入
             let isHave = false;
             shoppingCartData.forEach(element => {
                 if(parseInt(element.categoryId) === parseInt(productData.categoryId)) {
                     isHave = true;
-                    res.json({code: 1, msg: "已经在您的购物车里啦", data: elCategoryId});
+                    res.json({code: 1, msg: "已经在您的购物车里啦"});
                     return;
                 }
             })
             if(!isHave) {
                 resData = JSON.parse(cartData);
                 resData.push(productData);
+                console.log(resData);
                 const resStr = JSON.stringify(resData);
-                mysql.execute(`update users set shoppingCart="${resStr}" where userId=${userId}`).then(reData => {
+                mysql.execute(`update users set shoppingCart='${resStr}' where userId=${userId}`).then(reData => {
                     res.json({code: 0, msg: "添加购物车成功", data: resStr});
                     return;
                 }).catch(error => {
                     res.json({code: -1, msg: "添加失败", data: error});
                     return;
                 })
+            } else {
+                return;
             }
         }
     }).catch(error => {
@@ -233,7 +237,7 @@ router.post(`/updateProduct`, jsonParser, async (req, res, next) => {
         productName: req.body.productName,
         productImg: req.body.productImg,
         productDescript: req.body.productDescript,
-        productDesList: req.body.productDesList,
+        productDesList: req.body.productDesList.join(" && "),
         classifyId: req.body.classifyId,
         defaultCategoryId: req.body.defaultCategoryId
     };
@@ -335,8 +339,8 @@ router.post(`/addClassify`, jsonParser, async (req, res, next) => {
     if(!req.body || Object.keys(req.body).length === 0 || !req.body.classifyName) {
         res.json({code: -1, msg: "服务器繁忙"});
     }
-    const { classifyName } = req.body;
-    mysql.execute(`insert into classify (classifyName) values ("${classifyName}")`).then(data => {
+    const { classifyName, classifyImg = null } = req.body;
+    mysql.execute(`insert into classify (classifyName,classifyImg,isDelete) values ("${classifyName}","${classifyImg}",0)`).then(data => {
         res.json({code: 0, msg: "添加成功"});
     }).catch(error => {
         res.json({code: -1, msg: "添加失败", data: error});
@@ -349,16 +353,35 @@ router.delete(`/deleteClassify`, jsonParser, async (req, res, next) => {
         res.json({code: -1, msg: "服务器繁忙"});
     }
     const classifyId = req.query.classifyId;
-    mysql.execute(`delete from classify where classifyId=${classifyId}`).then(data => {
+    mysql.execute(`update classify set isDelete=1 where classifyId=${classifyId}`).then(data => {
         res.json({code: 0, msg: "删除成功"});
     }).catch(error => {
         res.json({code: -1, msg: "删除失败", data: error});
     })
 })
 
+router.post(`/updateClassify`, jsonParser, async (req, res, next) => {
+    if(!req.query || Object.keys(req.query).length === 0 || !req.query.classifyId) {
+        res.json({code: -1, msg: "服务器繁忙"});
+        return;
+    }
+    const classifyId = req.query.classifyId;
+    if(!req.body || Object.keys(req.body).length === 0 || !req.body.classifyName) {
+        res.json({code: -1, msg: "请输入正确分类名称"});
+        return;
+    }
+    const { classifyName, classifyImg } = req.body;
+    let sqlStr = `update classify set classifyName="${classifyName}", classifyImg="${classifyImg}"`;
+    mysql.execute(sqlStr).then(data => {
+        res.json({code: 0, msg: "修改成功"});
+    }).catch(error => {
+        res.json({code: -1, msg: "修改失败", data: error});
+    })
+})
+
 //获取分类列表
 router.get(`/getClassifyList`, jsonParser, async (req, res, next) => {
-    mysql.getObjList(`select * from classify`).then(data => {
+    mysql.getObjList(`select * from classify where isDelete=0`).then(data => {
         res.json({code: 0, msg: '获取成功', data: data})
     }).catch(error => {
         res.json({code: -1, msg: "获取失败", data: error});

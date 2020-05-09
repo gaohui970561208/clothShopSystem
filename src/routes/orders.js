@@ -44,10 +44,12 @@ router.post('/createOrder', jsonParser, async (req, res, next) => {
             })
         })
         if(fullStatus) {
-            mysql.execute(`insert into orders (status,shopId,address,productList,paymentStatus,userId,price,payType) values (${reqData.status},${reqData.shopId},'${reqData.address}','${reqData.productList}',${reqData.paymentStatus},${userId},${reqData.price},${reqData.payType})`).then(data => {
+            const time = new Date().getTime();
+            let sqlStr = `insert into orders (status,shopId,address,productList,paymentStatus,userId,price,payType) values (${reqData.status},${reqData.shopId},'${reqData.address}','${reqData.productList}',${reqData.paymentStatus},${userId},${reqData.price},${reqData.payType})`;
+            mysql.execute(sqlStr).then(data => {
                 //成功之后从库存中减去相应的数量
                 productList.forEach(element => {
-                    mysql.execute(`update category set cateNum=cateNum-${parseInt(element.productNum)} where categoryId=${element.categoryId}`);
+                    mysql.execute(`update category set cateNum=(cateNum-${parseInt(element.productNum)}) where categoryId=${element.categoryId}`);
                 })
                 res.json({code: 0, msg: "下单成功", data: data});
             }).catch(error => {
@@ -90,7 +92,7 @@ router.get(`/getOrderListInfo`, jsonParser, async (req, res, next) => {
     const userId = req.query.userId;
     const status = req.query.status;
     let sqlStr = `select * from orders where userId=${userId}`;
-    if(status != -1) {
+    if(status != -1 && status !== undefined) {
         sqlStr += ` and status=${status}`
     }
     mysql.getObjList(sqlStr).then(data => {

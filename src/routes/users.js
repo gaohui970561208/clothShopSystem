@@ -236,9 +236,8 @@ router.post(`/deleteShoppingCart`, jsonParser, async (req, res, next) => {
     }
     const userId = req.query.userId;
     const shopList = req.body;
-    mysql.getObj(`select shoppingCart from users where userId=${userId}`).then(data => {
-        const shoppingCartData = JSON.parse(JSON.stringify(data));
-        let list = JSON.parse(shoppingCartData.shoppingCart);
+    mysql.getResult(`select shoppingCart from users where userId=${userId}`).then(data => {
+        let list = JSON.parse(data);
         list.forEach((element, index) => {
             shopList.forEach(e => {
                 if(element.categoryId === e.categoryId) {
@@ -254,6 +253,56 @@ router.post(`/deleteShoppingCart`, jsonParser, async (req, res, next) => {
         })
     }).catch(error => {
         res.json({code: 0, msg: "服务器繁忙", data: error});
+    })
+})
+
+//修改个人信息
+router.post(`/updateUserInfo`, jsonParser, async (req, res, next) => {
+    if(!req.query || Object.keys(req.query).length === 0 || !req.query.userId) {
+        res.json({code: -1, msg: "服务器繁忙"});
+        return;
+    }
+    const userId = req.query.userId;
+    const { nickName, phone, avatarUrl, descript } = req.body;
+    let sqlStr = `update users set nickName="${nickName}", phone="${phone}", avatarUrl="${avatarUrl}", descript="${descript}" where userId=${userId}`;
+    mysql.execute(sqlStr).then(data => {
+        res.json({code: 0, msg: "修改成功"});
+    }).catch(error => {
+        res.json({code: -1, msg: "修改失败", data: error});
+    })
+}),
+
+router.get(`/getAddressList`, jsonParser, async (req, res, next) => {
+    if(!req.query || Object.keys(req.query).length === 0 || !req.query.userId) {
+        res.json({code: -1, msg: "服务器繁忙"});
+        return;
+    }
+    const userId = req.query.userId;
+    let sqlStr = `select addressList from users where userId=${userId}`;
+    mysql.getResult(sqlStr).then(data => {
+        const resData = JSON.parse(data);
+        res.json({code: 0, msg: "获取成功", data: resData});
+    }).catch(error => {
+        res.json({code: -1, msg: "获取失败", data: error});
+    })
+})
+
+router.post(`/updateAddressList`, jsonParser, async (req, res, next) => {
+    if(!req.query || Object.keys(req.query).length === 0 || !req.query.userId) {
+        res.json({code: -1, msg: "服务器繁忙"});
+        return;
+    }
+    const userId = req.query.userId;
+    if(!req.body || Object.keys(req.body).length === 0 || !req.body.addressList) {
+        res.json({code: -1, msg: "服务器繁忙"});
+        return;
+    }
+    const addressList = JSON.stringify(req.body.addressList);
+    let sqlStr = `update users set addressList='${addressList}' where userId=${userId}`;
+    mysql.execute(sqlStr).then(data => {
+        res.json({code: 0, msg: "修改成功"});
+    }).catch(error => {
+        res.json({code: -1, msg: "修改失败", data: error});
     })
 })
 
