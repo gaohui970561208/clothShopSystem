@@ -360,6 +360,7 @@ router.delete(`/deleteClassify`, jsonParser, async (req, res, next) => {
     })
 })
 
+//修改分类
 router.post(`/updateClassify`, jsonParser, async (req, res, next) => {
     if(!req.query || Object.keys(req.query).length === 0 || !req.query.classifyId) {
         res.json({code: -1, msg: "服务器繁忙"});
@@ -371,7 +372,7 @@ router.post(`/updateClassify`, jsonParser, async (req, res, next) => {
         return;
     }
     const { classifyName, classifyImg } = req.body;
-    let sqlStr = `update classify set classifyName="${classifyName}", classifyImg="${classifyImg}"`;
+    let sqlStr = `update classify set classifyName="${classifyName}", classifyImg='${classifyImg}' where classifyId=${classifyId}`;
     mysql.execute(sqlStr).then(data => {
         res.json({code: 0, msg: "修改成功"});
     }).catch(error => {
