@@ -230,8 +230,11 @@ router.put(`/confirmBack`, jsonParser, async (req, res, next) => {
     mysql.getResult(`select * from orders where orderId=${orderId}`).then(orderData => {
         if(orderData.status === 3 || orderData.status === 4) {
             const price = orderData.pirce;
+            //如果当前为确认收货或者订单完成的状态，说明收益已经进入卖家账户，从卖家的账户减去本次退款订单的收益。
             let sqlStr=`update users,shops,orders set users.profit=users.profit-${parseInt(price)} where orders.shopId=shops.shopId and shops.userId=users.userId and orders.orderId=${orderId}`
+            //首先更新订单的状态为退款
             mysql.execute(`update orders set status=5,backStatus=2 where orderId=${orderId}`).then(data => {
+                //执行减少收益的sql语句
                 mysql.execute(sqlStr).then(resData => {
                     res.json({code: 0, msg: "退款成功"});
                 }).catch(error => {
