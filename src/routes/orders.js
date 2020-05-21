@@ -226,10 +226,21 @@ router.put(`/confirmBack`, jsonParser, async (req, res, next) => {
         return;
     }
     const orderId = req.query.orderId;
-    mysql.execute(`update orders set status=5,backStatus=2 where orderId=${orderId}`).then(data => {
-        res.json({code: 0, msg: "退款成功"});
-    }).catch(error => {
-        res.json({code: -1, msg: "支付失败", data: error});
+    //首先获取当前订单的信息
+    mysql.getResult(`select * from orders where orderId=${orderId}`).then(orderData => {
+        if(orderData.status === 3 || orderData.status === 4) {
+            const price = orderData.pirce;
+            let sqlStr=`update users,shops,orders set users.profit=users.profit-${parseInt(price)} where orders.shopId=shops.shopId and shops.userId=users.userId and orders.orderId=${orderId}`
+            mysql.execute(`update orders set status=5,backStatus=2 where orderId=${orderId}`).then(data => {
+                mysql.execute(sqlStr).then(resData => {
+                    res.json({code: 0, msg: "退款成功"});
+                }).catch(error => {
+                    res.json({code: -1, msg: "退款失败", data: error});
+                })
+            }).catch(error => {
+                res.json({code: -1, msg: "退款失败", data: error});
+            })
+        }
     })
 })
 //退款驳回
