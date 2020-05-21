@@ -240,6 +240,12 @@ router.put(`/confirmBack`, jsonParser, async (req, res, next) => {
             }).catch(error => {
                 res.json({code: -1, msg: "退款失败", data: error});
             })
+        } else {
+            mysql.execute(`update orders set status=5,backStatus=2 where orderId=${orderId}`).then(data => {
+                res.json({code: 0, msg: "退款成功"});
+            }).catch(error => {
+                res.json({code: -1, msg: "退款失败", data: error});
+            })
         }
     })
 })
