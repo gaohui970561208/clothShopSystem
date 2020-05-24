@@ -50,6 +50,8 @@ router.post(`/login`, jsonParser, async (req,res,next) => {
             res.json({code: -1, msg: "没有这个用户", data:userInfo});
             return;
         }
+        //密码前端通过base64加密，密码结构为用户输入密码+当前时间作为字符串，进行加密，请求到后端，通过base64解密获取密码以及登录时间
+        //Buffer为缓冲池
         const passwordStr = Buffer.from(req.body.password, "base64").toString("ascii");
         const symbolIndex = passwordStr.lastIndexOf("+");
         const password = passwordStr.substring(0,symbolIndex);
